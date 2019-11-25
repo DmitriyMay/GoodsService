@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:table-layout="http://www.w3.org/1999/xhtml"
+      xmlns:width="http://www.w3.org/1999/xhtml" xmlns:word-wrap="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Products</title>
+    <script src="/js/jquery-3.4.0.min.js"></script>
+    <script src="http://code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="http://code.jquery.com/ui/1.11.0/jquery-ui.js"></script>
+    <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.0/themes/smoothness/jquery-ui.css">
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+</head>
+<body>
+<center>
+    <h1>Товары</h1>
+</center>
+<div id="product-form_add" title="Добавить товар">
+    <form>
+        <label>Название товара</label>
+        <input type='text' name="name" value="">
+        <br>
+        <br>
+        <label>Описание товара</label>
+        <input type='text' name="description" value="">
+        <br>
+        <br>
+        <label>Дата добавления</label>
+        <input type='date' name="createDate" value="">
+        <br>
+        <br>
+        <label>Номер ячейки</label>
+        <input type='text' name="placeStorage" value="0" required pattern="^[ 0-9]+$">
+        <br>
+        <br>
+        <label>Резервирование</label>
+        <input type='checkbox' checked="checked" name="reserved" value="true">
+    </form>
+</div>
+
+<center>
+    <div>
+        <input id="add" type='button' value='Добавить товар'>
+    </div>
+</center>
+
+<div id="product-form_edit" title="Редактировать товар">
+    <form>
+        <label>Id товара</label>
+        <input id="p_id" type='text' name="id" value="" readonly>
+        <br>
+        <br>
+        <label>Название товара</label>
+        <input id="p_name" type='text' name="name" required value="">
+        <br>
+        <br>
+        <label>Описание товара</label>
+        <input id="p_description" type='text' name="description" value="">
+        <br>
+        <br>
+        <label>Дата добавления</label>
+        <input id="p_date" type='date'  name="createDate" value="">
+        <br>
+        <br>
+        <label>Номер ячейки</label>
+        <input id="p_storage" type='text' name="placeStorage" value="" required pattern="^[ 0-9]+$">
+        <br>
+        <br>
+        <label>Резервирование</label>
+        <input id="p_reserved" type='checkbox' checked="checked" name="reserved" value="true">
+    </form>
+</div>
+
+
+<h3>
+    <table border="1">
+        <tbody id="product-list2">
+        <tr>
+            <td></td>
+            <!--<td></td>-->
+            <td align="center">Название</td>
+            <td align="center">Описание</td>
+            <td align="center">Дата добавления</td>
+            <td align="center">Номер ячейки</td>
+            <td align="center">Состояние</td>
+        </tr>
+        <tr th:each="product : ${products}" class="product-link" th:attr="data-id=${product.id}">
+            <td align="center">
+                <div>
+                    <input id="edit" type='button' value='Редактировать товар' th:attr="data-id=${product.id}">
+                </div>
+            </td>
+            <!--<td th:text="${product.id}" align="center"></td>-->
+            <td id="t_name" th:text="${product.name}" align="center" style="width:200px;"></td>
+            <td id="t_desc" th:text="${product.description}" align="center" style="width:200px;"></td>
+            <td id="t_date" th:text="${product.createDate}" align="center"></td>
+            <td id="t_storage" th:text="${product.placeStorage}" align="center"></td>
+            <td id="t_reserved" th:text="${product.reserved}? 'зарезервировано' : 'в наличии'" align="center"></td>
+        </tr>
+        </tbody>
+    </table>
+</h3>
+
+</body>
+<script>
+    const appendProduct = function(data) {
+
+     var reserved = data.reserved ? "зарезервировано" : "в наличии";
+
+     var productCode2 =
+       '<td align="center"><div><input id="edit" type=\'button\' value=\'Редактировать товар\' data-id="' + data.id + '"></div></td>' +
+       //'<td align="center">' + data.id + '</td>' +
+       '<td align="center">' + data.name + '</td>' +
+       '<td align="center">' + data.description + '</td>' +
+       '<td align="center">' + data.createDate + '</td>' +
+       '<td align="center">' + data.placeStorage + '</td>' +
+       '<td align="center">' + reserved + '</td>';
+
+
+     $('#product-list2').append('<tr>' + productCode2 + '</tr>');
+
+   };
+
+   var editProductButton = $("#product-form_edit").dialog({
+     autoOpen: false,
+     modal: false,
+     buttons: {
+       "Сохранить": function() {
+
+         var data = $('#product-form_edit form').serialize();
+
+         var dataArray = $('#product-form_edit form').serializeArray();
+
+         var link = $(this).data('link');
+
+
+         if (dataArray[3]["value"] == "") {
+           alert("Вы не указали дату");
+         } else if (!dataArray[4]["value"].match(/^\d+$/)){
+			 alert("Вы указали не число");
+		 } else {
+           $.ajax({
+             method: "PUT",
+             url: '/products/',
+             data: data,
+             contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+             success: function(response) {
+
+               product = {};
+
+               product['id'] = "";
+
+               for (i in dataArray) {
+                 product[dataArray[i]['name']] = dataArray[i]['value'];
+               }
+
+               var reserved = product.reserved ? "зарезервировано" : "в наличии";
+
+               link.closest("tr").find("#t_name").text(product.name);
+               link.closest("tr").find("#t_desc").text(product.description);
+               link.closest("tr").find("#t_date").text(product.createDate);
+               link.closest("tr").find("#t_storage").text(product.placeStorage);
+               link.closest("tr").find("#t_reserved").text(reserved)
+
+             },
+             error: function(e) {
+               alert('Error: ' + e);
+             }
+           });
+
+           $(this).dialog("close")
+         }
+
+       },
+       "Удалить": function() {
+
+         var link = $(this).data('link');
+         var productId = link.closest("tr").find("#edit").attr("data-id");
+
+         $.ajax({
+           method: "DELETE",
+           url: '/products/' + productId,
+           success: function(response) {
+
+             link.closest("tr").remove();
+
+           },
+           error: function(e) {
+             alert('Error: ' + e);
+           }
+         });
+
+         $(this).dialog("close")
+
+       }
+     }
+   });
+
+
+   var editAndGetProductForForm = function() {
+     $("input[id=edit]").click(function() {
+       var link = $(this);
+       var productId = link.data('id');
+       $.ajax({
+         method: "GET",
+         url: '/products/' + productId,
+         headers: {
+           'Cache-Control': 'no-cache, no-store, must-revalidate',
+           'Pragma': 'no-cache',
+           'Expires': '0'
+         },
+         success: function(response) {
+
+           $("#p_id").attr("value", response.id);
+           $("#p_name").attr("value", response.name);
+           $("#p_description").attr("value", response.description);
+           $("#p_date").attr("value", response.createDate);
+           $("#p_storage").attr("value", response.placeStorage);
+           $("#p_reserved").attr("checked", response.reserved);
+           $("#p_reserved").prop('checked', response.reserved);
+
+         },
+         error: function(response) {
+           if (response.status == 404) {
+             alert('Товар не найден!');
+
+           }
+         }
+       });
+       editProductButton.data('link', $(this).parents()).dialog("open");
+
+     });
+   }
+
+   editAndGetProductForForm();
+
+
+   var addProduct = $("#product-form_add").dialog({
+     autoOpen: false,
+     modal: true,
+     buttons: {
+
+       "Сохранить": function() {
+
+         var data = $('#product-form_add form').serialize();
+         var dataArray = $('#product-form_add form').serializeArray();
+
+         if (dataArray[2]["value"] == "") {
+           alert("Вы не указали дату");
+         } else if (!dataArray[3]["value"].match(/^\d+$/)){
+			 alert("Вы указали не число");
+		 }else {
+           $.ajax({
+             method: "POST",
+             url: '/products/',
+             data: data,
+             contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+             success: function(response) {
+
+
+               var path = response["Location"].split('/');
+               var id = path[path.length - 1];
+
+
+               var product = {};
+
+               product['id'] = id;
+               for (i in dataArray) {
+                 product[dataArray[i]['name']] = dataArray[i]['value'];
+               }
+
+               appendProduct(product);
+
+               $('#product-list2').on('click', 'input', function() {
+
+                 editAndGetProductForForm();
+
+               })
+
+             },
+             error: function(e) {
+               alert('Error: ' + e);
+             }
+           });
+
+           $(this).dialog("close")
+         }
+
+         return false;
+       },
+
+       "Закрыть": function() {
+         $(this).dialog("close")
+       }
+     }
+   });
+
+
+   $("input[id=add]").click(function() {
+     addProduct.dialog("open");
+   });
+</script>
+</html>
